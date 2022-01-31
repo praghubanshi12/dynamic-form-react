@@ -3,20 +3,33 @@ import { useValidator } from "../providers/ValidationProvider";
 import Table from "../Table";
 
 const TableContainer = () => {
-    const { handleChange, errors, setErrors } = useValidator();
+    const INITIAL_COLUMNS = { "ACTIVE": ["name", "price"], "INACTIVE": ["warranty", "stars"] }
 
-    const [counter, setCounter] = useState(2);
+    const { handleChange, handleInitialValidation, errors, setErrors } = useValidator();
+
+    const [counter, setCounter] = useState(0);
+
+    const [rowNo, setRowNo] = useState(0);
 
     const [products, setProducts] = useState([]);
 
     const [isValidated, setValidated] = useState(false);
 
-    const [columns, setColumns] = useState({ active: ["name", "price"], hidden: ["warranty"] })
+    const [columns, setColumns] = useState({ active: INITIAL_COLUMNS.ACTIVE, hidden: INITIAL_COLUMNS.INACTIVE })
 
+    useEffect(() => {
+        var initialFormRow = [...document.getElementsByClassName("table-body-row")][0];
+        [...initialFormRow.querySelectorAll("input, select")].forEach(input => {
+            handleInitialValidation(input);
+        })
+    }, [])
+
+    //after validation check; to disable/enable submit btn, 
     useEffect(() => {
         setValidated(Object.keys(errors["active"]).length === 0)
     }, [errors])
 
+    //after column checkbox click
     useEffect(() => {
         setProducts([]);
         [...document.getElementsByClassName('dynamic-column')].forEach(col => {
@@ -24,88 +37,57 @@ const TableContainer = () => {
         })
     }, [columns])
 
-    function updateColumns() {
-        [...document.getElementsByClassName("checkbox")].forEach(element => {
-            var updatedColumns = { ...columns }
-            var checkboxColName = element.getAttribute("name");
-            var updatedErrors = { ...errors };
+    useEffect(() => {
+        if (counter > 0) setRowNo(rowNo => rowNo + counter)
+    }, [counter])
 
-            if (element.checked) {
-                updatedColumns["hidden"].pop(checkboxColName);
-                updatedColumns["active"].push(checkboxColName);
+    useEffect(() => {
 
-                Object.keys(updatedErrors["hidden"]).forEach(key => {
-                    if (key.startsWith(checkboxColName)) {
-                        updatedErrors["active"][key] = updatedErrors["hidden"][key]
-                        delete updatedErrors["hidden"][key]
-                    }
+        if (rowNo > 0) {
+            var cloneNode = document.getElementsByClassName("table-body-row")[0].cloneNode(true);
+            cloneNode.replaceChild(getMinusButtonData(), cloneNode.lastChild);
+            var prevErrors = { ...errors };
+            [...cloneNode.querySelectorAll("input, select")].forEach(input => {
+                input.value = "";
+                input.addEventListener("input", (event) => {
+                    handleChange(event);
                 });
-            } else {
-                updatedColumns["active"].pop(checkboxColName);
-                updatedColumns["hidden"].push(checkboxColName);
 
-                Object.keys(updatedErrors["active"]).forEach(key => {
-                    if (key.startsWith(checkboxColName)) {
-                        updatedErrors["hidden"][key] = updatedErrors["active"][key]
-                        delete updatedErrors["active"][key]
-                    }
-                });
-            }
-            setErrors(updatedErrors);
-            setColumns(updatedColumns)
+                handleInitialValidation(input);
+            })
+            setErrors(prevErrors);
+            var tbody = document.getElementById("table-body");
+            tbody.appendChild(cloneNode);
+            setRowNo(0)
+        }
+    }, [rowNo])
+
+    function updateColumns(e) {
+        var columnName = e.target.name
+        var newStatus = e.target.checked ? "active" : "hidden";
+        var oldStatus = e.target.checked ? "hidden" : "active";
+
+        var updatedColumns = { ...columns }
+        //shift columns status from active to hidden, or vice versa
+        updatedColumns[oldStatus] = updatedColumns[oldStatus].filter(col => {
+            return col !== columnName
         });
+        updatedColumns[newStatus].push(columnName);
+        setColumns(updatedColumns)
+
+        var updatedErrors = { ...errors };
+        Object.keys(updatedErrors[oldStatus]).forEach(columnKey => {
+            //shift error status from active to hidden, or vice versa
+            if (columnKey.startsWith(columnName)) {
+                updatedErrors[newStatus][columnKey] = updatedErrors[oldStatus][columnKey]
+                delete updatedErrors[oldStatus][columnKey]
+            }
+        });
+        setErrors(updatedErrors);
     }
 
     function addRow() {
-        document.getElementById("table-body").appendChild(getNodes(columns));
-    }
-
-    function getNodes(columns) {
-        setCounter(counter => counter + 1);
-        var newRowNode = document.createElement("tr");
-        newRowNode.className = "table-row";
-        newRowNode.id = `row-${counter}`;
-
-        columns["active"].forEach(colName => {
-            newRowNode.appendChild(getInputDatas(colName, false));
-        });
-
-        columns["hidden"].forEach(colName => {
-            newRowNode.appendChild(getInputDatas(colName, true));
-        });
-
-        newRowNode.appendChild(getMinusButtonData());
-        return newRowNode;
-    }
-
-    function getInputDatas(colName, isHidden) {
-        var cloneNode = document.getElementsByName(`${colName}0`)[0].cloneNode(true);
-        cloneNode.addEventListener("change", (event) => {
-            handleChange(event);
-        })
-
-        cloneNode.name = `${colName}${[counter]}`;
-        cloneNode.value = '';
-
-        var inputData = document.createElement("td");
-        inputData.className = 'dynamic-column';
-        inputData.hidden = isHidden;
-        inputData.setAttribute("name", colName);
-        inputData.appendChild(cloneNode);
-
-        var validationText = document.createElement("span");
-        validationText.className = 'text-danger';
-        validationText.innerHTML = `This ${colName} is required`;
-        inputData.appendChild(validationText);
-        var errorState = isHidden ? "hidden" : "active";
-
-        var prevErrors = { ...errors };
-        prevErrors[errorState][cloneNode.name] = `This ${colName} is required`;
-        // setErrors(error => ({
-        //     ...error, [cloneNode.name]: `This ${colName} is required`
-        // }))
-        setErrors(prevErrors)
-        return inputData;
+        setCounter(counter => counter + 1)
     }
 
     function getMinusButtonData() {
@@ -114,38 +96,37 @@ const TableContainer = () => {
         minusButtonNode.type = "button";
         minusButtonNode.innerHTML = '-';
         minusButtonNode.className = 'btn btn-danger btn-remove';
-        minusButtonNode.id = counter;
 
-        minusButtonNode.onclick = function (event) {
-            var id = event.target.id;
-            document.getElementById(`row-${id}`).remove();
-
+        minusButtonNode.onclick = function () {
+            this.closest('tr').remove();
             setErrors(prevErrors => {
                 const errors = { ...prevErrors };
-                delete errors["active"][`name${id}`];
-                delete errors["active"][`price${id}`];
-                delete errors["active"][`warranty${id}`];
-                delete errors["hidden"][`warranty${id}`];
+                removeErrorsFromRow(errors["active"]);
+                removeErrorsFromRow(errors["hidden"]);
                 return errors;
             })
         }
-
         minusButtonData.appendChild(minusButtonNode);
         return minusButtonData
+    }
+
+    function removeErrorsFromRow(errorState) {
+        Object.keys(errorState).forEach(error => {
+            if (error.endsWith(counter)) delete errorState[error]
+        })
     }
 
     function handleSubmit(e) {
         e.preventDefault();
 
-        // [...document.getElementsByTagName("input")].forEach(input => {
-        //     handleSave(input);
-        // })
-
         setProducts([]);
-        [...document.getElementsByClassName("table-row")].forEach(function (row) {
+        [...document.getElementsByClassName("table-body-row")].forEach(function (row) {
             var updatedProducts = {};
-            columns['active'].forEach(colName => {
-                updatedProducts[colName] = row.querySelector(`.${colName}-input`).value
+            [...row.querySelectorAll('.form-control')].forEach(input => {
+                var colName = input.placeholder || input.closest("td").getAttribute("name");
+                if (columns['active'].includes(colName)) {
+                    updatedProducts[colName] = input.value;
+                }
             })
             setProducts(oldProducts => [...oldProducts, updatedProducts]);
         });
@@ -154,10 +135,10 @@ const TableContainer = () => {
     }
 
     return (
-        <Table 
-            updateColumns={updateColumns} addRow={addRow} handleSubmit={handleSubmit} handleChange={handleChange} 
-            products={products} isValidated={isValidated} columns={columns}
-            />
+        <Table
+            updateColumns={updateColumns} addRow={addRow} handleSubmit={handleSubmit} handleChange={handleChange}
+            products={products} isValidated={isValidated} columns={columns} rowNo={rowNo}
+        />
     )
 }
 

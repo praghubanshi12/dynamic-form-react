@@ -11,7 +11,6 @@ export default function App() {
         <Router>
           <Routes>
             <Route index element={<TableContainer/>}></Route>
-            <Route path="home" element={<TableContainer/>}></Route>
           </Routes>
         </Router>
       </ValidationProvider>

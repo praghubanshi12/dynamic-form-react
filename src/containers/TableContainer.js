@@ -107,7 +107,6 @@ const TableContainer = () => {
             })
         }
         minusButtonData.appendChild(minusButtonNode);
-        //git testing
         return minusButtonData
     }
 

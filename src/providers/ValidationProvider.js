@@ -50,6 +50,7 @@ export default function ValidationProvider({ children }) {
 
     const updateValidations = (input, validationMsg) => {
         var prevErrors = { ...errors };
+        console.log(input, input.closest("td").hidden);
         if (!prevErrors[input.closest("td").hidden ? "hidden" : "active"][input.name]) {
             prevErrors[input.closest("td").hidden ? "hidden" : "active"][input.name] = validationMsg;
             setErrors(prevErrors);

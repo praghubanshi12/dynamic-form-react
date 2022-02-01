@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useValidator } from "../providers/ValidationProvider";
-import Table from "../Table";
+import Table from "../components/Table";
 
 const TableContainer = () => {
     const INITIAL_COLUMNS = { "ACTIVE": ["name", "price"], "INACTIVE": ["warranty", "stars"] }
@@ -17,6 +17,14 @@ const TableContainer = () => {
 
     const [columns, setColumns] = useState({ active: INITIAL_COLUMNS.ACTIVE, hidden: INITIAL_COLUMNS.INACTIVE })
 
+    //after column checkbox click
+    useEffect(() => {
+        setProducts([]);
+        [...document.getElementsByClassName('dynamic-column')].forEach(col => {
+            col.hidden = columns["hidden"].includes(col.getAttribute("name"))
+        })
+    }, [columns])
+
     useEffect(() => {
         var initialFormRow = [...document.getElementsByClassName("table-body-row")][0];
         [...initialFormRow.querySelectorAll("input, select")].forEach(input => {
@@ -27,22 +35,14 @@ const TableContainer = () => {
     //after validation check; to disable/enable submit btn, 
     useEffect(() => {
         setValidated(Object.keys(errors["active"]).length === 0)
+        console.log(errors);
     }, [errors])
-
-    //after column checkbox click
-    useEffect(() => {
-        setProducts([]);
-        [...document.getElementsByClassName('dynamic-column')].forEach(col => {
-            col.hidden = columns["hidden"].includes(col.getAttribute("name"))
-        })
-    }, [columns])
 
     useEffect(() => {
         if (counter > 0) setRowNo(rowNo => rowNo + counter)
     }, [counter])
 
     useEffect(() => {
-
         if (rowNo > 0) {
             var cloneNode = document.getElementsByClassName("table-body-row")[0].cloneNode(true);
             cloneNode.replaceChild(getMinusButtonData(), cloneNode.lastChild);
@@ -118,7 +118,6 @@ const TableContainer = () => {
 
     function handleSubmit(e) {
         e.preventDefault();
-
         setProducts([]);
         [...document.getElementsByClassName("table-body-row")].forEach(function (row) {
             var updatedProducts = {};
@@ -130,7 +129,6 @@ const TableContainer = () => {
             })
             setProducts(oldProducts => [...oldProducts, updatedProducts]);
         });
-
         // localStorage.setItem("products", JSON.stringify(products));
     }
 

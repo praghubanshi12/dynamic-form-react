@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 
 const ValidationContext = React.createContext('');
 
@@ -7,6 +7,9 @@ export function useValidator() {
 }
 
 export default function ValidationProvider({ children }) {
+    useEffect(() => {
+        console.log("I'm a provider");
+    }) 
     const [errors, setErrors] = useState({ active: {}, hidden: {} });
 
     const handleChange = (event) => {

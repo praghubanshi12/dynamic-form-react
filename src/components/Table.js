@@ -1,4 +1,6 @@
 import React from 'react'
+import ColumnSelect from './ColumnSelect'
+import ProductList from './ProductList'
 
 
 export default function Table({ updateColumns, addRow, handleSubmit, handleChange, products, isValidated, columns, rowNo }) {
@@ -55,13 +57,12 @@ export default function Table({ updateColumns, addRow, handleSubmit, handleChang
             </div>
             <div className='col'>
                 {
-                    products.map((product, index) =>
-                        <h5 key={index}>
-                            <strong>Name:</strong> {product["name"]}
-                            <strong>, Price:</strong> {product["price"]}
-                            {columns['active'].includes("warranty") && <strong>, Warranty:</strong>} {product["warranty"]}
-                            {columns['active'].includes("stars") && <strong>, Star:</strong>} {product["stars"]}
-                        </h5>)}
+                    <>
+                        <ColumnSelect />
+
+                        <ProductList products={products} columns={columns} />
+                    </>
+                }
             </div>
         </div>
     )

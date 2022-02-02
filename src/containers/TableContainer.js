@@ -17,6 +17,10 @@ const TableContainer = () => {
 
     const [columns, setColumns] = useState({ active: INITIAL_COLUMNS.ACTIVE, hidden: INITIAL_COLUMNS.INACTIVE })
 
+    useEffect(() => {
+        console.log("I'm a container");
+    })
+
     //after column checkbox click
     useEffect(() => {
         setProducts([]);

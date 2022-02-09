@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useCategories } from './CategoriesProvider';
 
 const ValidationContext = React.createContext('');
 
@@ -7,10 +8,12 @@ export function useValidator() {
 }
 
 export default function ValidationProvider({ children }) {
-    useEffect(() => {
-        console.log("I'm a provider");
-    }) 
-    const [errors, setErrors] = useState({ active: {}, hidden: {} });
+    
+    const [dynamicErrors, setDynamicErrors] = useState({ active: {}, hidden: {} });
+
+    const [errors, setErrors] = useState({});
+
+    const {categories} = useCategories();
 
     const handleChange = (event) => {
         event.preventDefault();
@@ -29,34 +32,44 @@ export default function ValidationProvider({ children }) {
 
     const validate = (name, value, placeholder, input) => {
         var validationMsg;
-
         switch (placeholder) {
             case "warranty":
                 if (value < 1 || value > 10) {
                     validationMsg = `This ${placeholder} value should be less than 10 years`
+                    updateDynamicFormValidations(input, validationMsg);
+                } else {
+                    removeDynamicFormErrors(input, name);
+                }
+                break;
+
+            case "category":
+                if(value.length === 0){
+                    validationMsg = `This ${placeholder} is required`
+                    updateValidations(input, validationMsg);
+                } else if(categories.includes(value)){
+                    validationMsg = `This ${placeholder} already exists`;
                     updateValidations(input, validationMsg);
                 } else {
-                    removeError(input, name);
+                    removeErrors(input, name)
                 }
                 break;
 
             default:
                 if (value.length === 0 || value <= 0) {
                     validationMsg = `This ${placeholder} is required`
-                    updateValidations(input, validationMsg);
+                    updateDynamicFormValidations(input, validationMsg);
                 } else {
-                    removeError(input, name);
+                    removeDynamicFormErrors(input, name);
                 }
                 break;
         }
     }
 
-    const updateValidations = (input, validationMsg) => {
-        var prevErrors = { ...errors };
-        console.log(input, input.closest("td").hidden);
+    const updateDynamicFormValidations = (input, validationMsg) => {
+        var prevErrors = { ...dynamicErrors };
         if (!prevErrors[input.closest("td").hidden ? "hidden" : "active"][input.name]) {
             prevErrors[input.closest("td").hidden ? "hidden" : "active"][input.name] = validationMsg;
-            setErrors(prevErrors);
+            setDynamicErrors(prevErrors);
         }
         input.nextSibling?.remove();
         var validationText = document.createElement("span");
@@ -65,10 +78,30 @@ export default function ValidationProvider({ children }) {
         input.parentNode.insertBefore(validationText, input.nextSibling)
     }
 
-    const removeError = (input, name) => {
+    const updateValidations = (input, validationMsg) => {
+        setErrors({...errors, [input.placeholder]: validationMsg})
+        input.nextSibling?.remove();
+        var validationText = document.createElement("span");
+        validationText.className = 'text-danger';
+        validationText.innerHTML = validationMsg
+        input.parentNode.insertBefore(validationText, input.nextSibling)
+    }
+
+    const removeDynamicFormErrors = (input, name) => {
+        setDynamicErrors(prevErrors => {
+            const dynamicErrors = { ...prevErrors };
+            delete dynamicErrors["active"][name];
+            return dynamicErrors;
+        })
+        if (input.nextSibling) {
+            input.parentNode.removeChild(input.nextSibling)
+        }
+    }
+
+    const removeErrors = (input, name) => {
         setErrors(prevErrors => {
             const errors = { ...prevErrors };
-            delete errors["active"][name];
+            delete errors[name];
             return errors;
         })
         if (input.nextSibling) {
@@ -77,7 +110,7 @@ export default function ValidationProvider({ children }) {
     }
 
     return (
-        <ValidationContext.Provider value={{ handleChange, errors, setErrors, handleInitialValidation }}>
+        <ValidationContext.Provider value={{ handleChange, dynamicErrors, setDynamicErrors, handleInitialValidation, errors }}>
             {children}
         </ValidationContext.Provider>
     )

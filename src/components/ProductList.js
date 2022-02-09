@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 
 export default function ProductList({ products, columns }) {
     useEffect(() => {
-        console.log("I am products");
+        // console.log("I am products");
     })
     return <div>
         {

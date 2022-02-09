@@ -3,17 +3,16 @@ import ColumnSelect from './ColumnSelect'
 import ProductList from './ProductList'
 
 
-export default function Table({ updateColumns, addRow, handleSubmit, handleChange, products, isValidated, columns, rowNo }) {
+export default function Table({ updateColumns, addRow, handleSubmit, handleChange, products, isValidated, columns, rowNo, isActive }) {
 
     return (
-        <div className='row'>
-            <div className='col'>
+        <div hidden={!isActive}>
+            <div>
                 <label>Warranty</label>
                 <input type="checkbox" name="warranty" onChange={updateColumns} />
 
                 <label>Stars</label>
                 <input type="checkbox" name="stars" onChange={updateColumns} />
-
                 <form onSubmit={handleSubmit}>
                     <table className='table'>
                         <thead>
@@ -52,14 +51,12 @@ export default function Table({ updateColumns, addRow, handleSubmit, handleChang
                             </tr>
                         </tbody>
                     </table>
-                    <button type="submit" style={{ textAlign: 'center' }} className='btn btn-primary' disabled={!isValidated}>Submit</button>
+                    {/*  <button type="submit" style={{ textAlign: 'center' }} className='btn btn-primary' disabled={!isValidated}>Submit</button> */}
                 </form>
             </div>
-            <div className='col'>
+            <div>
                 {
                     <>
-                        <ColumnSelect />
-
                         <ProductList products={products} columns={columns} />
                     </>
                 }

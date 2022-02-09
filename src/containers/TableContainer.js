@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useValidator } from "../providers/ValidationProvider";
 import Table from "../components/Table";
 
-const TableContainer = () => {
+const TableContainer = ({updateValidation, isActive}) => {
     const INITIAL_COLUMNS = { "ACTIVE": ["name", "price"], "INACTIVE": ["warranty", "stars"] }
 
-    const { handleChange, handleInitialValidation, errors, setErrors } = useValidator();
+    const { handleChange, handleInitialValidation, dynamicErrors, setDynamicErrors } = useValidator();
 
     const [counter, setCounter] = useState(0);
 
@@ -16,10 +16,6 @@ const TableContainer = () => {
     const [isValidated, setValidated] = useState(false);
 
     const [columns, setColumns] = useState({ active: INITIAL_COLUMNS.ACTIVE, hidden: INITIAL_COLUMNS.INACTIVE })
-
-    useEffect(() => {
-        console.log("I'm a container");
-    })
 
     //after column checkbox click
     useEffect(() => {
@@ -38,9 +34,9 @@ const TableContainer = () => {
 
     //after validation check; to disable/enable submit btn, 
     useEffect(() => {
-        setValidated(Object.keys(errors["active"]).length === 0)
-        console.log(errors);
-    }, [errors])
+        setValidated(Object.keys(dynamicErrors["active"]).length === 0)
+        updateValidation(Object.keys(dynamicErrors["active"]).length === 0)
+    }, [dynamicErrors])
 
     useEffect(() => {
         if (counter > 0) setRowNo(rowNo => rowNo + counter)
@@ -50,7 +46,7 @@ const TableContainer = () => {
         if (rowNo > 0) {
             var cloneNode = document.getElementsByClassName("table-body-row")[0].cloneNode(true);
             cloneNode.replaceChild(getMinusButtonData(), cloneNode.lastChild);
-            var prevErrors = { ...errors };
+            var prevErrors = { ...dynamicErrors };
             [...cloneNode.querySelectorAll("input, select")].forEach(input => {
                 input.value = "";
                 input.addEventListener("input", (event) => {
@@ -59,7 +55,7 @@ const TableContainer = () => {
 
                 handleInitialValidation(input);
             })
-            setErrors(prevErrors);
+            setDynamicErrors(prevErrors);
             var tbody = document.getElementById("table-body");
             tbody.appendChild(cloneNode);
             setRowNo(0)
@@ -79,7 +75,7 @@ const TableContainer = () => {
         updatedColumns[newStatus].push(columnName);
         setColumns(updatedColumns)
 
-        var updatedErrors = { ...errors };
+        var updatedErrors = { ...dynamicErrors };
         Object.keys(updatedErrors[oldStatus]).forEach(columnKey => {
             //shift error status from active to hidden, or vice versa
             if (columnKey.startsWith(columnName)) {
@@ -87,7 +83,7 @@ const TableContainer = () => {
                 delete updatedErrors[oldStatus][columnKey]
             }
         });
-        setErrors(updatedErrors);
+        setDynamicErrors(updatedErrors);
     }
 
     function addRow() {
@@ -103,11 +99,11 @@ const TableContainer = () => {
 
         minusButtonNode.onclick = function () {
             this.closest('tr').remove();
-            setErrors(prevErrors => {
-                const errors = { ...prevErrors };
-                removeErrorsFromRow(errors["active"]);
-                removeErrorsFromRow(errors["hidden"]);
-                return errors;
+            setDynamicErrors(prevErrors => {
+                const dynamicErrors = { ...prevErrors };
+                removeErrorsFromRow(dynamicErrors["active"]);
+                removeErrorsFromRow(dynamicErrors["hidden"]);
+                return dynamicErrors;
             })
         }
         minusButtonData.appendChild(minusButtonNode);
@@ -133,13 +129,12 @@ const TableContainer = () => {
             })
             setProducts(oldProducts => [...oldProducts, updatedProducts]);
         });
-        // localStorage.setItem("products", JSON.stringify(products));
     }
 
     return (
         <Table
             updateColumns={updateColumns} addRow={addRow} handleSubmit={handleSubmit} handleChange={handleChange}
-            products={products} isValidated={isValidated} columns={columns} rowNo={rowNo}
+            products={products} isValidated={isValidated} columns={columns} rowNo={rowNo} isActive={isActive}
         />
     )
 }
